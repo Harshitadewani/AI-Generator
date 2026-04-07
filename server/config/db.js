@@ -10,7 +10,11 @@ const connectDB = async () => {
         console.log(`✅ MongoDB Active: ${conn.connection.host} (${conn.connection.name})`);
     } catch (error) {
         console.error(`❌ Connection Failed: ${error.message}`);
-        console.error("Check your MONGO_URI in Render dashboard and Atlas Network Access!");
+        if (error.message.includes('Authentication failed')) {
+            console.error("💡 TIP: Aapka MongoDB username/password mismatch ho raha hai. Render Dashboard mein MONGO_URI ko re-check aur update karein.");
+        } else if (error.message.includes('IP not in whitelist')) {
+            console.error("💡 TIP: MongoDB Atlas mein Network Access (0.0.0.0/0) allow karein.");
+        }
         process.exit(1);
     }
 };
