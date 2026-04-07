@@ -12,13 +12,22 @@ const allowedOrigins = process.env.CLIENT_URL
 
 app.use(cors({
     origin: function (origin, callback) {
-        // allow requests with no origin (like mobile apps or curl requests)
-        if (!origin) return callback(null, true);
-        if (allowedOrigins.indexOf(origin) === -1) {
-            const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
-            return callback(new Error(msg), false);
+        // Allow local development
+        if (!origin || origin.startsWith('http://localhost')) {
+            return callback(null, true);
         }
-        return callback(null, true);
+
+        const allowedOrigins = process.env.CLIENT_URL ? process.env.CLIENT_URL.split(',') : [];
+        
+        // Allow production URL and ANY vercel deployment preview
+        const isAllowed = allowedOrigins.includes(origin) || origin.endsWith('.vercel.app');
+
+        if (isAllowed) {
+            callback(null, true);
+        } else {
+            console.log('Blocked by CORS:', origin);
+            callback(new Error('Not allowed by CORS'), false);
+        }
     },
     credentials: true
 }));
