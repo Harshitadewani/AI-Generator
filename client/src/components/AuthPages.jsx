@@ -33,7 +33,7 @@ export default function AuthPages() {
             <Sparkles className="text-white" size={32} />
           </div>
           <h1 className="text-3xl font-black bg-gradient-to-r from-white to-indigo-400 bg-clip-text text-transparent">
-            {isLogin ? 'Welcome Back!' : 'Join AI Gereator'}
+            {isLogin ? 'Welcome Back!' : 'Join AI Code Generator'}
           </h1>
           <p className="text-slate-400 mt-2">The ultimate workspace for code generation.</p>
         </div>
