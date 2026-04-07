@@ -1,0 +1,103 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primary: #8b5cf6; /* Vibrant Violet */
+  --secondary: #06b6d4; /* Electric Cyan */
+  --accent: #ec4899; /* Neon Pink */
+  --bg-dark: #020617; /* Deepest Luxury Black */
+  --card-bg: rgba(15, 23, 42, 0.4);
+}
+
+@layer base {
+  body {
+    @apply bg-[#020617] text-slate-100 antialiased selection:bg-fuchsia-500/30 overflow-hidden;
+    font-family: 'Outfit', 'Inter', sans-serif;
+  }
+}
+
+@layer components {
+  /* Glassmorphism 3.0: High Reflection & Glow */
+  .glass-card {
+    @apply bg-slate-900/30 backdrop-blur-3xl border border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.8)] relative overflow-hidden;
+  }
+  
+  .glass-card::before {
+    content: '';
+    @apply absolute inset-0 bg-gradient-to-tr from-violet-500/5 to-cyan-500/5 pointer-events-none;
+  }
+
+  .glass-input {
+    @apply bg-slate-950/60 backdrop-blur-2xl border border-white/5 focus:border-violet-500/50 focus:ring-4 focus:ring-violet-500/10 transition-all duration-500 outline-none;
+  }
+
+  /* Vibrant Mesh Background 2.0 */
+  .mesh-bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    background-color: var(--bg-dark);
+    background-image: 
+      radial-gradient(at 10% 20%, rgba(139, 92, 246, 0.25) 0px, transparent 45%),   /* Violet */
+      radial-gradient(at 90% 10%, rgba(6, 182, 212, 0.2) 0px, transparent 40%),    /* Cyan */
+      radial-gradient(at 50% 50%, rgba(236, 72, 153, 0.15) 0px, transparent 45%),  /* Pink */
+      radial-gradient(at 80% 90%, rgba(139, 92, 246, 0.2) 0px, transparent 45%);   /* Violet */
+    filter: blur(100px);
+    animation: meshFlow 25s ease-in-out infinite alternate;
+  }
+
+  @keyframes meshFlow {
+    0% { transform: scale(1) translate(0, 0); }
+    50% { transform: scale(1.1) translate(2%, 2%); }
+    100% { transform: scale(1) translate(-2%, 4%); }
+  }
+
+  .vibrant-gradient-text {
+    @apply bg-gradient-to-r from-violet-400 via-fuchsia-300 to-cyan-300 bg-clip-text text-transparent;
+  }
+
+  .cyber-button {
+    @apply relative overflow-hidden transition-all duration-500 hover:shadow-[0_0_40px_rgba(139,92,246,0.5)] active:scale-95 border border-white/10 rounded-2xl;
+  }
+
+  .chatbot-bubble-user {
+    @apply bg-gradient-to-br from-violet-600 to-fuchsia-600 text-white rounded-2xl rounded-tr-none px-6 py-4 shadow-[0_4px_30px_rgba(139,92,246,0.3)] max-w-[85%] self-end border border-white/20;
+  }
+
+  .chatbot-bubble-ai {
+    @apply bg-slate-900/60 text-slate-100 rounded-2xl rounded-tl-none px-6 py-4 shadow-2xl border border-white/5 max-w-[85%] self-start backdrop-blur-2xl;
+  }
+  
+  .neon-border {
+    @apply relative p-[1px] overflow-hidden rounded-2xl;
+    background: linear-gradient(90deg, #8b5cf6, #ec4899, #06b6d4, #8b5cf6);
+    background-size: 300% 100%;
+    animation: borderFlow 10s linear infinite;
+  }
+  
+  @keyframes borderFlow {
+    0% { background-position: 0% 50%; }
+    100% { background-position: 100% 50%; }
+  }
+}
+
+/* Animations */
+@keyframes slideInUp {
+  from { opacity: 0; transform: translateY(30px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.animate-entrance {
+  animation: slideInUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Scrollbar Enhancement */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { @apply bg-violet-600/50 rounded-full hover:bg-violet-500 transition-all; }
