@@ -1,61 +1,52 @@
 const express = require('express');
 const router = express.Router();
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+const { GoogleGenAI } = require("@google/genai"); // Using the new SDK you suggested
 const History = require('../models/History');
 require('dotenv').config();
 
-// Helper to initialize AI with specific version
-const initAI = (key) => {
-    // Forcing 'v1' stable API to avoid 404 in certain regions
-    return new GoogleGenerativeAI(key);
-};
+// Initialize the new AI SDK
+const ai = new GoogleGenAI({
+  apiKey: process.env.GEMINI_API_KEY,
+});
 
 // @route   POST api/generator/generate
 router.post('/generate', async (req, res) => {
     const { prompt, technology, user_id } = req.body;
     
+    if (!prompt || !prompt.trim()) {
+        return res.status(400).json({ error: "Describe your component first" });
+    }
+
     try {
-        const rawKey = process.env.GEMINI_API_KEY || "";
-        const apiKey = rawKey.trim();
+        console.log("🚀 Generating with new SDK and Premium Prompt...");
         
-        if (!apiKey) {
-            return res.status(500).json({ message: 'GEMINI_API_KEY is not configured on Render.' });
-        }
+        // Using the EXACT logic from your Vercel project
+        const response = await ai.models.generateContent({
+          model: "gemini-3-flash-preview", 
+          contents: `
+You are an experienced programmer with expertise in web development and UI/UX design. You create modern, animated, and fully responsive UI components. You are highly skilled in HTML, CSS, Tailwind CSS, Bootstrap, JavaScript, React, Next.js, Vue.js, Angular, and more.
 
-        const genAI = initAI(apiKey);
-        let responseText = "";
-        let finalModelUsed = "";
-        
-        // Using stable model IDs for v1 API
-        const modelsToTry = ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-pro"];
-        const promptText = `Act as an expert developer. Tech: ${technology}. User: ${prompt}. Return ONLY the raw code. No markdown code blocks unless requested.`;
+Now, generate a UI component for: ${prompt}
+Framework to use: ${technology}
 
-        for (const modelName of modelsToTry) {
-            try {
-                console.log(`🚀 Final Stable Attempt with: ${modelName}`);
-                const model = genAI.getGenerativeModel({ model: modelName });
-                const result = await model.generateContent(promptText);
-                const response = await result.response;
-                responseText = response.text();
-                
-                if (responseText) {
-                    finalModelUsed = modelName;
-                    break; 
-                }
-            } catch (err) {
-                console.error(`❌ ${modelName} failed:`, err.message);
-                continue; 
-            }
-        }
+Requirements:
+- The code must be clean, well-structured, and easy to understand.
+- Optimize for SEO where applicable.
+- Focus on creating a modern, animated, and responsive UI design.
+- Include high-quality hover effects, shadows, animations, colors, and typography.
+- Return ONLY the code, formatted properly in Markdown fenced code blocks.
+- Do NOT include explanations, text, comments, or anything else besides the code.
+- And give the whole code in a single HTML file if possible.
+          `,
+        });
+
+        let responseText = response.text;
 
         if (!responseText) {
-            return res.status(500).json({ 
-                message: 'AI Service currently unavailable (Stable API failed). Check Render Logs for details.',
-                error: 'All models failed'
-            });
+            throw new Error("Empty response from AI");
         }
 
-        // Cleanse code blocks
+        // Cleanse markdown markers if any
         responseText = responseText.replace(/```(?:html|jsx|js|css|tsx|ts|javascript|react)?\n/ig, '').replace(/```\s*$/g, '');
         
         // Save to History (background)
@@ -70,24 +61,11 @@ router.post('/generate', async (req, res) => {
 
         res.json({ code: responseText });
     } catch (err) {
-        console.error("Fatal Generation Error:", err);
-        res.status(500).json({ message: 'Internal Server Error', error: err.message });
-    }
-});
-
-// Test route to debug AI specifically
-router.get('/ai-test', async (req, res) => {
-    try {
-        const apiKey = (process.env.GEMINI_API_KEY || "").trim();
-        if (!apiKey) return res.json({ error: 'API Key missing' });
-        
-        const genAI = initAI(apiKey);
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-        const result = await model.generateContent("Hello, are you active? Reply 'YES'.");
-        const response = await result.response;
-        res.json({ success: true, model: "gemini-1.5-flash", response: response.text() });
-    } catch (err) {
-        res.json({ success: false, error: err.message });
+        console.error("AI Generation Error:", err.message);
+        res.status(500).json({ 
+            message: 'Something went wrong while generating code', 
+            details: err.message 
+        });
     }
 });
 
