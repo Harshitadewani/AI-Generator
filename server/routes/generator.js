@@ -4,7 +4,11 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 const History = require('../models/History');
 require('dotenv').config();
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+// Helper to initialize AI with specific version
+const initAI = (key) => {
+    // Forcing 'v1' stable API to avoid 404 in certain regions
+    return new GoogleGenerativeAI(key);
+};
 
 // @route   POST api/generator/generate
 router.post('/generate', async (req, res) => {
@@ -18,17 +22,17 @@ router.post('/generate', async (req, res) => {
             return res.status(500).json({ message: 'GEMINI_API_KEY is not configured on Render.' });
         }
 
-        const genAI = new GoogleGenerativeAI(apiKey);
-        
+        const genAI = initAI(apiKey);
         let responseText = "";
         let finalModelUsed = "";
-        const modelsToTry = ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-pro", "gemini-1.0-pro"];
         
+        // Using stable model IDs for v1 API
+        const modelsToTry = ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-pro"];
         const promptText = `Act as an expert developer. Tech: ${technology}. User: ${prompt}. Return ONLY the raw code. No markdown code blocks unless requested.`;
 
         for (const modelName of modelsToTry) {
             try {
-                console.log(`🚀 Attempting AI Generation with: ${modelName}`);
+                console.log(`🚀 Final Stable Attempt with: ${modelName}`);
                 const model = genAI.getGenerativeModel({ model: modelName });
                 const result = await model.generateContent(promptText);
                 const response = await result.response;
@@ -40,22 +44,17 @@ router.post('/generate', async (req, res) => {
                 }
             } catch (err) {
                 console.error(`❌ ${modelName} failed:`, err.message);
-                if (err.message.includes("API key not valid")) {
-                    return res.status(401).json({ message: 'Invalid Gemini API Key. Please check Render Environment Variables.' });
-                }
                 continue; 
             }
         }
 
         if (!responseText) {
             return res.status(500).json({ 
-                message: 'All AI models failed to respond. Check your API Key permissions in Google AI Studio.',
-                error: 'All fallbacks failed'
+                message: 'AI Service currently unavailable (Stable API failed). Check Render Logs for details.',
+                error: 'All models failed'
             });
         }
 
-        console.log(`✅ Generation Successful using: ${finalModelUsed}`);
-        
         // Cleanse code blocks
         responseText = responseText.replace(/```(?:html|jsx|js|css|tsx|ts|javascript|react)?\n/ig, '').replace(/```\s*$/g, '');
         
@@ -73,6 +72,22 @@ router.post('/generate', async (req, res) => {
     } catch (err) {
         console.error("Fatal Generation Error:", err);
         res.status(500).json({ message: 'Internal Server Error', error: err.message });
+    }
+});
+
+// Test route to debug AI specifically
+router.get('/ai-test', async (req, res) => {
+    try {
+        const apiKey = (process.env.GEMINI_API_KEY || "").trim();
+        if (!apiKey) return res.json({ error: 'API Key missing' });
+        
+        const genAI = initAI(apiKey);
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const result = await model.generateContent("Hello, are you active? Reply 'YES'.");
+        const response = await result.response;
+        res.json({ success: true, model: "gemini-1.5-flash", response: response.text() });
+    } catch (err) {
+        res.json({ success: false, error: err.message });
     }
 });
 
