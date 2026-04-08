@@ -20,9 +20,15 @@ router.post('/generate', async (req, res) => {
     try {
         console.log("🚀 Generating with new SDK and Premium Prompt...");
         
-        // Using stable model to avoid the 503 "High Demand" error on preview models
+        // Using stable model with Safety Settings disabled for maximum response rate
         const response = await ai.models.generateContent({
           model: "gemini-1.5-flash", 
+          safetySettings: [
+            { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+            { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+            { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+            { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
+          ],
           contents: `
 You are an experienced programmer with expertise in web development and UI/UX design. You create modern, animated, and fully responsive UI components. You are highly skilled in HTML, CSS, Tailwind CSS, Bootstrap, JavaScript, React, Next.js, Vue.js, Angular, and more.
 
