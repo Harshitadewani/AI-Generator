@@ -20,9 +20,9 @@ router.post('/generate', async (req, res) => {
     try {
         console.log("🚀 Generating with new SDK and Premium Prompt...");
         
-        // Using the EXACT logic from your Vercel project
+        // Using stable model to avoid the 503 "High Demand" error on preview models
         const response = await ai.models.generateContent({
-          model: "gemini-3-flash-preview", 
+          model: "gemini-1.5-flash", 
           contents: `
 You are an experienced programmer with expertise in web development and UI/UX design. You create modern, animated, and fully responsive UI components. You are highly skilled in HTML, CSS, Tailwind CSS, Bootstrap, JavaScript, React, Next.js, Vue.js, Angular, and more.
 
