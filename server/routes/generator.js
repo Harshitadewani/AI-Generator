@@ -11,17 +11,24 @@ router.post('/generate', async (req, res) => {
     const { prompt, technology, user_id } = req.body;
     
     try {
-        if (!process.env.GEMINI_API_KEY && !process.env.DEFAULT_KEY) {
-             // Just a safety check
-        }
+        const rawKey = process.env.GEMINI_API_KEY || "";
+        const apiKey = rawKey.trim();
         
-        const modelsToTry = ["gemini-1.5-flash", "gemini-1.5-flash-latest", "gemini-pro"];
+        if (!apiKey) {
+            return res.status(500).json({ message: 'GEMINI_API_KEY is not configured on Render.' });
+        }
+
+        const genAI = new GoogleGenerativeAI(apiKey);
+        
+        let responseText = "";
+        let finalModelUsed = "";
+        const modelsToTry = ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-pro", "gemini-1.0-pro"];
         
         const promptText = `Act as an expert developer. Tech: ${technology}. User: ${prompt}. Return ONLY the raw code. No markdown code blocks unless requested.`;
 
         for (const modelName of modelsToTry) {
             try {
-                console.log(`🚀 Final Attempt with: ${modelName}`);
+                console.log(`🚀 Attempting AI Generation with: ${modelName}`);
                 const model = genAI.getGenerativeModel({ model: modelName });
                 const result = await model.generateContent(promptText);
                 const response = await result.response;
@@ -29,20 +36,20 @@ router.post('/generate', async (req, res) => {
                 
                 if (responseText) {
                     finalModelUsed = modelName;
-                    break;
+                    break; 
                 }
             } catch (err) {
                 console.error(`❌ ${modelName} failed:`, err.message);
                 if (err.message.includes("API key not valid")) {
-                    return res.status(500).json({ message: 'Invalid Gemini API Key. Please update it on Render dashboard.' });
+                    return res.status(401).json({ message: 'Invalid Gemini API Key. Please check Render Environment Variables.' });
                 }
-                continue;
+                continue; 
             }
         }
 
         if (!responseText) {
             return res.status(500).json({ 
-                message: 'All AI models are currently busy or unavailable. Please try again in 30 seconds.',
+                message: 'All AI models failed to respond. Check your API Key permissions in Google AI Studio.',
                 error: 'All fallbacks failed'
             });
         }
@@ -65,7 +72,7 @@ router.post('/generate', async (req, res) => {
         res.json({ code: responseText });
     } catch (err) {
         console.error("Fatal Generation Error:", err);
-        res.status(500).json({ message: 'Internal Server Error' });
+        res.status(500).json({ message: 'Internal Server Error', error: err.message });
     }
 });
 
