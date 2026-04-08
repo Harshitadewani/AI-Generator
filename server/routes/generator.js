@@ -11,39 +11,41 @@ router.post('/generate', async (req, res) => {
     const { prompt, technology, user_id } = req.body;
     
     try {
-        // Ensure API Key exists
-        if (!process.env.GEMINI_API_KEY) {
-            return res.status(500).json({ message: 'GEMINI_API_KEY is not configured on the server.' });
+        if (!process.env.GEMINI_API_KEY && !process.env.DEFAULT_KEY) {
+             // Just a safety check
         }
-        
-        const apiKey = process.env.GEMINI_API_KEY;
-        console.log(`Using API Key (last 4): ...${apiKey.slice(-4)}`);
         
         let responseText = "";
+        let finalModelUsed = "";
+        const modelsToTry = ["gemini-1.5-flash-latest", "gemini-1.5-flash", "gemini-pro"];
+        
+        const promptText = `Act as an expert developer. Tech: ${technology}. User: ${prompt}. Return ONLY the raw code. No markdown code blocks unless requested.`;
 
-        // Attempt 1: Requested Gemini 3 Flash Preview
-        try {
-            console.log("Attempting Gemini 3 Flash Preview...");
-            const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
-            const promptText = `Act as an expert developer. Tech: ${technology}. User: ${prompt}. Return ONLY the raw code. No markdown code blocks unless requested.`;
-            const result = await model.generateContent(promptText);
-            responseText = result.response.text();
-        } catch (f1) {
-            console.error("Gemini 3 failed, trying 1.5 Flash fallback...", f1.message);
-            // Attempt 2: Stable Fallback
+        for (const modelName of modelsToTry) {
             try {
-                const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-                const promptText = `Act as an expert developer. Tech: ${technology}. User: ${prompt}. Return ONLY the raw code. No markdown code blocks unless requested.`;
+                console.log(`🚀 Attempting AI Generation with: ${modelName}`);
+                const model = genAI.getGenerativeModel({ model: modelName });
                 const result = await model.generateContent(promptText);
                 responseText = result.response.text();
-            } catch (f2) {
-                console.error("All models failed:", f2.message);
-                return res.status(500).json({ 
-                    message: 'Gemini API Error (Both models failed)', 
-                    details: f2.message 
-                });
+                
+                if (responseText) {
+                    finalModelUsed = modelName;
+                    break; // Success! Exit loop.
+                }
+            } catch (err) {
+                console.error(`❌ ${modelName} failed:`, err.message);
+                continue; // Try next model
             }
         }
+
+        if (!responseText) {
+            return res.status(500).json({ 
+                message: 'All AI models are currently busy or unavailable. Please try again in 30 seconds.',
+                error: 'All fallbacks failed'
+            });
+        }
+
+        console.log(`✅ Generation Successful using: ${finalModelUsed}`);
         
         // Cleanse code blocks
         responseText = responseText.replace(/```(?:html|jsx|js|css|tsx|ts|javascript|react)?\n/ig, '').replace(/```\s*$/g, '');
@@ -61,7 +63,7 @@ router.post('/generate', async (req, res) => {
         res.json({ code: responseText });
     } catch (err) {
         console.error("Fatal Generation Error:", err);
-        res.status(500).json({ message: 'Internal Server Error', error: err.message });
+        res.status(500).json({ message: 'Internal Server Error' });
     }
 });
 
