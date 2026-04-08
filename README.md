@@ -2,7 +2,7 @@
 
 A cutting-edge MERN stack application that leverages Google's Gemini AI to generate modern, animated, and fully responsive UI components in seconds. Designed with a **Cyber-Vibrant** aesthetic, it offers a seamless experience for developers to build premium user interfaces.
 
-![AI Code Generator Preview](./preview.png)
+![AI Code Generator Preview](./client/preview.png)
 
 ## ✨ Key Features
 
