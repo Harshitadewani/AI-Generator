@@ -31,17 +31,23 @@ router.post('/login', async (req, res) => {
     const { email, password } = req.body;
     try {
         const user = await User.findOne({ email });
-        if (user && (await user.matchPassword(password))) {
+        if (!user) {
+            return res.status(401).json({ message: 'Account not found. Please Sign Up first.' });
+        }
+        
+        const isMatch = await user.matchPassword(password);
+        if (isMatch) {
             res.json({
                 _id: user._id,
                 email: user.email,
                 token: generateToken(user._id),
             });
         } else {
-            res.status(401).json({ message: 'Invalid email or password' });
+            res.status(401).json({ message: 'Incorrect password. Please try again.' });
         }
     } catch (err) {
-        res.status(500).json({ message: 'Server Error' });
+        console.error("Login Server Error:", err.message);
+        res.status(500).json({ message: 'Internal Server Error during Login' });
     }
 });
 
