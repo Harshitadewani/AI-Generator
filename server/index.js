@@ -23,6 +23,15 @@ app.use('/api/generator', require('./routes/generator'));
 
 const PORT = process.env.PORT || 5000;
 
+// Status Check Route
+app.get('/api/status', (req, res) => {
+    res.json({
+        server: 'online',
+        database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+        gemini_key: process.env.GEMINI_API_KEY ? 'is-set' : 'missing'
+    });
+});
+
 app.get('/', (req, res) => {
     res.send('AI Code Generator API is running...');
 });

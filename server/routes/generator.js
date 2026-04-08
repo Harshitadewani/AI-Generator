@@ -15,26 +15,28 @@ router.post('/generate', async (req, res) => {
              // Just a safety check
         }
         
-        let responseText = "";
-        let finalModelUsed = "";
-        const modelsToTry = ["gemini-1.5-flash-latest", "gemini-1.5-flash", "gemini-pro"];
+        const modelsToTry = ["gemini-1.5-flash", "gemini-1.5-flash-latest", "gemini-pro"];
         
         const promptText = `Act as an expert developer. Tech: ${technology}. User: ${prompt}. Return ONLY the raw code. No markdown code blocks unless requested.`;
 
         for (const modelName of modelsToTry) {
             try {
-                console.log(`🚀 Attempting AI Generation with: ${modelName}`);
+                console.log(`🚀 Final Attempt with: ${modelName}`);
                 const model = genAI.getGenerativeModel({ model: modelName });
                 const result = await model.generateContent(promptText);
-                responseText = result.response.text();
+                const response = await result.response;
+                responseText = response.text();
                 
                 if (responseText) {
                     finalModelUsed = modelName;
-                    break; // Success! Exit loop.
+                    break;
                 }
             } catch (err) {
                 console.error(`❌ ${modelName} failed:`, err.message);
-                continue; // Try next model
+                if (err.message.includes("API key not valid")) {
+                    return res.status(500).json({ message: 'Invalid Gemini API Key. Please update it on Render dashboard.' });
+                }
+                continue;
             }
         }
 
